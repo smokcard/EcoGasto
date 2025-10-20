@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Recomendaciones Financieras</title>
+  <style>
+    body { font-family: 'Segoe UI', Arial, sans-serif; background: #f0f0f0; margin: 0; }
+    nav { background: #333; padding: 10px; text-align: center; }
+    nav a { color: #fff; margin: 0 10px; text-decoration: none; }
+    .contenedor { background: #fff; margin: 40px auto; padding: 20px; border-radius: 8px; max-width: 900px; }
+    h2 { margin-bottom: 20px; }
+    .alerta { color: red; font-weight: bold; }
+    .ok { color: green; font-weight: bold; }
+    ul { margin-top: 15px; }
+  </style>
+</head>
+<body>
+  <nav>
+    <a href="index.html">Inicio</a>
+    <a href="gastos.html">Ingresar Gastos</a>
+    <a href="grafico.html">Ver Gráfico</a>
+    <a href="recomendaciones.html">Recomendaciones</a>
+    <a href="comparar.html">Comparar Meses</a>
+  </nav>
+
+  <div class="contenedor">
+    <h2>💡 Recomendaciones según tu presupuesto</h2>
+    <div id="consejos"></div>
+    <div id="ranking"></div>
+  </div>
+
+  <script>
+    const formatoCLP = new Intl.NumberFormat("es-CL");
+    const reglas = {
+      "Vivienda": 0.25,
+      "Comida": 0.15,
+      "Transporte": 0.05,
+      "Servicios / Salud": 0.05,
+      "Ocio / Compras": 0.30,
+      "Ahorro / Deudas": 0.20
+    };
+
+    const params = new URLSearchParams(window.location.search);
+    const mes = params.get("mes") || "2025-01";
+    let datos = JSON.parse(localStorage.getItem(`finanzas-${mes}`));
+
+    if (!datos) {
+      document.getElementById("consejos").innerHTML = "<p>⚠️ No hay datos guardados para este mes.</p>";
+    } else {
+      let sueldo = datos.sueldo;
+      let gastos = datos.gastos;
+
+      let desviaciones = [];
+      let html = "<ul>";
+
+      Object.keys(reglas).forEach(categoria => {
+        let gastado = (gastos.find(g => g.categoria === categoria)?.monto) || 0;
+        let limite = sueldo * reglas[categoria];
+        let diferencia = gastado - limite;
+        desviaciones.push({ categoria, diferencia, gastado, limite });
+
+        if (gastado > limite) {
+          html += `<li class="alerta">⚠️ Estás gastando demasiado en <b>${categoria}</b>: ${formatoCLP.format(gastado)} (límite ${formatoCLP.format(limite)}).</li>`;
+        } else {
+          html += `<li class="ok">✅ Tu gasto en <b>${categoria}</b> (${formatoCLP.format(gastado)}) está dentro del límite (${formatoCLP.format(limite)}).</li>`;
+        }
+      });
+      html += "</ul>";
+
+      document.getElementById("consejos").innerHTML = html;
+
+      // Ranking de desviaciones (Top 3 con porcentajes)
+      desviaciones.sort((a,b) => Math.abs(b.diferencia) - Math.abs(a.diferencia));
+      let top3 = desviaciones.slice(0,3);
+
+      let rankingHtml = `<h3>📌 Ranking de desviaciones</h3><ol>`;
+      top3.forEach(d => {
+        let porcentajeReal = ((d.gastado / sueldo) * 100).toFixed(1);
+        let porcentajeIdeal = (reglas[d.categoria] * 100).toFixed(1);
+        rankingHtml += `<li><b>${d.categoria}</b>: gastaste ${formatoCLP.format(d.gastado)} 
+        (${porcentajeReal}% del sueldo) frente a un ideal de ${porcentajeIdeal}% 
+        → ${d.diferencia > 0 ? "⚠️ sobrepasado" : "✅ por debajo"}</li>`;
+      });
+      rankingHtml += "</ol>";
+
+      document.getElementById("ranking").innerHTML = rankingHtml;
+    }
+  </script>
+</body>
+</html>

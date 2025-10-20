@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Resultados</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body { font-family: 'Segoe UI', Arial, sans-serif; background: #f0f0f0; margin: 0; }
+    nav { background: #333; padding: 10px; text-align: center; }
+    nav a { color: #fff; margin: 0 10px; text-decoration: none; }
+    .contenedor { background: #fff; margin: 40px auto; padding: 20px; border-radius: 8px; max-width: 900px; }
+    table { border-collapse: collapse; width: 100%; margin-top: 20px; }
+    th, td { border: 1px solid #ccc; padding: 8px; text-align: center; }
+    th { background: #f4f4f4; }
+    canvas { max-width: 800px; margin-top: 30px; }
+  </style>
+</head>
+<body>
+  <nav>
+    <a href="index.html">Inicio</a>
+    <a href="gastos.html">Ingresar Gastos</a>
+    <a href="grafico.html">Ver Gráfico</a>
+    <a href="recomendaciones.html">Recomendaciones</a>
+    <a href="comparar.html">Comparar Meses</a>
+  </nav>
+
+  <div class="contenedor">
+    <h2>📊 Resultados del Mes</h2>
+    <div id="resultado"></div>
+    <table id="tablaResultados">
+      <thead><tr><th>Categoría</th><th>Gastado</th><th>Límite</th><th>Estado</th></tr></thead>
+      <tbody></tbody>
+    </table>
+    <canvas id="grafico"></canvas>
+  </div>
+
+  <script>
+    const formatoCLP = new Intl.NumberFormat("es-CL");
+    const reglas = {
+      "Vivienda": 0.25,
+      "Comida": 0.15,
+      "Transporte": 0.05,
+      "Servicios / Salud": 0.05,
+      "Ocio / Compras": 0.30,
+      "Ahorro / Deudas": 0.20
+    };
+
+    const params = new URLSearchParams(window.location.search);
+    const mes = params.get("mes") || "2025-01";
+    let datos = JSON.parse(localStorage.getItem(`finanzas-${mes}`));
+
+    if (!datos) {
+      document.getElementById("resultado").innerHTML = "⚠️ No hay datos guardados para este mes.";
+    } else {
+      let sueldo = datos.sueldo;
+      let gastos = datos.gastos;
+
+      let labels = Object.keys(reglas);
+      let dataGastado = labels.map(c => {
+        let g = gastos.find(x => x.categoria === c);
+        return g ? g.monto : 0;
+      });
+      let dataLimite = labels.map(c => sueldo * reglas[c]);
+
+      // Tabla
+      let tbody = document.querySelector("#tablaResultados tbody");
+      tbody.innerHTML = "";
+      labels.forEach((c,i)=>{
+        let fila = `<tr>
+          <td>${c}</td>
+          <td>${formatoCLP.format(dataGastado[i])}</td>
+          <td>${formatoCLP.format(dataLimite[i])}</td>
+          <td>${dataGastado[i]>dataLimite[i]?"⚠️ Sobrepasado":"✅ Correcto"}</td>
+        </tr>`;
+        tbody.innerHTML += fila;
+      });
+
+      // Gráfico
+      let ctx = document.getElementById("grafico").getContext("2d");
+      new Chart(ctx, {
+        type: "bar",
+        data: {
+          labels: labels,
+          datasets: [
+            { label: "Gastado", data: dataGastado, backgroundColor: "rgba(255,99,132,0.7)" },
+            { label: "Límite recomendado", data: dataLimite, backgroundColor: "rgba(54,162,235,0.7)" }
+          ]
+        },
+        options: {
+          responsive: true,
+          plugins: {
+            tooltip: {
+              callbacks: {
+                label: ctx => `${ctx.dataset.label}: ${formatoCLP.format(ctx.raw)}`
+              }
+            }
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              ticks: { callback: v => formatoCLP.format(v) }
+            }
+          }
+        }
+      });
+    }
+  </script>
+</body>
+</html>

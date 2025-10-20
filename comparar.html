@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Comparar Meses</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body { font-family: 'Segoe UI', Arial, sans-serif; background: #f0f0f0; margin: 0; }
+    nav { background: #333; padding: 10px; text-align: center; }
+    nav a { color: #fff; margin: 0 10px; text-decoration: none; }
+    .contenedor { background: #fff; margin: 40px auto; padding: 20px; border-radius: 8px; max-width: 1000px; }
+    table { border-collapse: collapse; width: 100%; margin-top: 20px; }
+    th, td { border: 1px solid #ccc; padding: 8px; text-align: center; }
+    th { background: #f4f4f4; }
+    canvas { max-width: 950px; margin-top: 30px; }
+  </style>
+</head>
+<body>
+  <nav>
+    <a href="index.html">Inicio</a>
+    <a href="gastos.html">Ingresar Gastos</a>
+    <a href="grafico.html">Ver Gráfico</a>
+    <a href="recomendaciones.html">Recomendaciones</a>
+    <a href="comparar.html">Comparar Meses</a>
+  </nav>
+
+  <div class="contenedor">
+    <h2>📊 Comparación Automática de Meses</h2>
+    <div id="tabla"></div>
+    <canvas id="grafico"></canvas>
+  </div>
+
+  <script>
+    const formatoCLP = new Intl.NumberFormat("es-CL");
+    const categorias = ["Vivienda","Comida","Transporte","Servicios / Salud","Ocio / Compras","Ahorro / Deudas"];
+
+    // Leer todos los meses guardados
+    let meses = Object.keys(localStorage).filter(k => k.startsWith("finanzas-"));
+    meses.sort(); // orden cronológico
+
+    let resultados = {};
+    meses.forEach(k => {
+      let mes = k.replace("finanzas-","");
+      let datos = JSON.parse(localStorage.getItem(k));
+      if (datos) {
+        resultados[mes] = {};
+        categorias.forEach(c => resultados[mes][c] = 0);
+        datos.gastos.forEach(g => {
+          if (categorias.includes(g.categoria)) {
+            resultados[mes][g.categoria] += g.monto;
+          }
+        });
+      }
+    });
+
+    // Construir tabla comparativa
+    let html = "<table><thead><tr><th>Categoría</th>";
+    Object.keys(resultados).forEach(m => html += `<th>${m}</th>`);
+    html += "</tr></thead><tbody>";
+    categorias.forEach(c => {
+      html += `<tr><td>${c}</td>`;
+      Object.keys(resultados).forEach(m => {
+        let val = resultados[m] ? formatoCLP.format(resultados[m][c]) : "-";
+        html += `<td>${val}</td>`;
+      });
+      html += "</tr>";
+    });
+    html += "</tbody></table>";
+    document.getElementById("tabla").innerHTML = html;
+
+    // Gráfico comparativo
+    let ctx = document.getElementById("grafico").getContext("2d");
+    new Chart(ctx, {
+      type: "bar",
+      data: {
+        labels: categorias,
+        datasets: Object.keys(resultados).map((m,i) => ({
+          label: m,
+          data: categorias.map(c => resultados[m][c]),
+          backgroundColor: `hsl(${i*60},70%,60%)`
+        }))
+      },
+      options: {
+        responsive: true,
+        plugins: {
+          tooltip: {
+            callbacks: {
+              label: ctx => `${ctx.dataset.label}: ${formatoCLP.format(ctx.raw)}`
+            }
+          }
+        },
+        scales: {
+          y: {
+            beginAtZero: true,
+            ticks: { callback: v => formatoCLP.format(v) }
+          }
+        }
+      }
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Ingreso de Gastos</title>
+  <style>
+    body {
+      margin:0;
+      font-family:'Segoe UI',Arial,sans-serif;
+      background: linear-gradient(135deg, #74ebd5, #ACB6E5);
+      color:#333;
+      overflow-x:hidden;
+    }
+
+    /* Barra de navegación */
+    nav {
+      background:#333;
+      padding:15px;
+      text-align:center;
+      position:fixed;
+      top:0; left:0; width:100%;
+      z-index:1000;
+      box-shadow:0 2px 6px rgba(0,0,0,0.3);
+    }
+    nav a {
+      color:#fff;
+      margin:0 15px;
+      text-decoration:none;
+      font-weight:bold;
+      transition:color 0.3s ease;
+    }
+    nav a:hover { color:#FFD700; }
+
+    /* Contenedor principal */
+    .contenedor {
+      background:#fff;
+      margin:120px auto 40px auto;
+      padding:30px;
+      border-radius:12px;
+      max-width:900px;
+      box-shadow:0 8px 20px rgba(0,0,0,0.15);
+      opacity:0;
+      transform:translateY(30px);
+      transition:all 1s ease;
+    }
+    .contenedor.visible { opacity:1; transform:translateY(0); }
+
+    h2 { color:#333; margin-bottom:20px; }
+    h3 { margin-top:30px; color:#444; }
+
+    label { font-weight:bold; display:block; margin-top:15px; }
+
+    input[type="tel"], select {
+      width:100%;
+      padding:10px;
+      margin-top:5px;
+      border:1px solid #ccc;
+      border-radius:6px;
+      font-size:1em;
+      transition:border 0.3s ease, box-shadow 0.3s ease, background 0.2s ease;
+      background:#fafafa;
+    }
+    input[type="tel"]:focus, select:focus {
+      border-color:#4CAF50;
+      box-shadow:0 0 6px rgba(76,175,80,0.35);
+      outline:none;
+      background:#fff;
+    }
+
+    table {
+      border-collapse:collapse;
+      width:100%;
+      margin-top:20px;
+      border-radius:8px;
+      overflow:hidden;
+    }
+    th, td {
+      border:1px solid #e5e5e5;
+      padding:10px;
+      text-align:center;
+    }
+    th {
+      background:#4CAF50;
+      color:#fff;
+      font-weight:600;
+      letter-spacing:0.2px;
+    }
+    tr:nth-child(even) { background:#f9f9f9; }
+
+    /* Estado de límite vs gasto */
+    .limite.ok { color:#2e7d32; font-weight:600; }
+    .limite.warn { color:#e65100; font-weight:600; }
+    .limite.over { color:#c62828; font-weight:700; }
+
+    .nota {
+      margin-top:10px;
+      font-size:0.95em;
+      color:#666;
+    }
+
+    button {
+      margin-top:25px;
+      padding:12px 25px;
+      background:#4CAF50;
+      color:white;
+      border:none;
+      border-radius:6px;
+      font-size:1em;
+      font-weight:bold;
+      cursor:pointer;
+      transition:background 0.3s ease, transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    button:hover {
+      background:#45a049;
+      transform:translateY(-1px);
+      box-shadow:0 6px 14px rgba(0,0,0,0.15);
+    }
+
+    /* Footer */
+    footer {
+      background:#222;
+      color:#ccc;
+      text-align:center;
+      padding:20px;
+      opacity:0;
+      transform:translateY(30px);
+      transition:all 1s ease;
+    }
+    footer.visible { opacity:1; transform:translateY(0); }
+    footer a {
+      color:#FFD700;
+      text-decoration:none;
+      margin:0 8px;
+      transition:color 0.3s ease;
+    }
+    footer a:hover { color:#fff; }
+  </style>
+</head>
+<body>
+  <nav>
+    <a href="index.html">Inicio</a>
+    <a href="gastos.html">Ingresar Gastos</a>
+    <a href="grafico.html">Ver Gráfico</a>
+    <a href="recomendaciones.html">Recomendaciones</a>
+    <a href="comparar.html">Comparar Meses</a>
+    <a href="compras.html">Compras por Mes</a>
+  </nav>
+
+  <div class="contenedor">
+    <h2>📋 Ingreso de Sueldo y Gastos</h2>
+
+    <label for="mes">📅 Mes:</label>
+    <select id="mes"></select>
+
+    <label for="sueldo">💵 Sueldo mensual (CLP):</label>
+    <input type="tel" id="sueldo" placeholder="Ej: 850000">
+
+    <h3>Gastos por categoría (con límite recomendado)</h3>
+    <table id="tablaGastos">
+      <thead>
+        <tr><th>Categoría</th><th>Monto</th><th>Límite recomendado</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Vivienda</td><td><input type="tel" class="monto"></td><td class="limite"></td></tr>
+        <tr><td>Comida</td><td><input type="tel" class="monto"></td><td class="limite"></td></tr>
+        <tr><td>Transporte</td><td><input type="tel" class="monto"></td><td class="limite"></td></tr>
+        <tr><td>Servicios / Salud</td><td><input type="tel" class="monto"></td><td class="limite"></td></tr>
+        <tr><td>Ocio / Compras</td><td><input type="tel" class="monto"></td><td class="limite"></td></tr>
+        <tr><td>Ahorro / Deudas</td><td><input type="tel" class="monto"></td><td class="limite"></td></tr>
+      </tbody>
+    </table>
+
+    <p class="nota">Los límites se calculan según la regla 50/20/30 ajustada por categoría. Ingresa tu sueldo y los montos para ver indicadores.</p>
+
+    <button onclick="guardarDatos()">Guardar y ver gráfico</button>
+  </div>
+
+  <footer>
+    <p>© 2025 Mi App Financiera · Diseñada con ❤️ y animaciones CSS</p>
+    <p><a href="#">GitHub</a> | <a href="#">LinkedIn</a> | <a href="#">Contacto</a></p>
+  </footer>
+
+  <script>
+    const formatoCLP = new Intl.NumberFormat("es-CL");
+    const reglas = {
+      "Vivienda": 0.25,
+      "Comida": 0.15,
+      "Transporte": 0.05,
+      "Servicios / Salud": 0.05,
+      "Ocio / Compras": 0.30,
+      "Ahorro / Deudas": 0.20
+    };
+
+    // Generar dinámicamente los 12 meses del año actual
+    const selectMes = document.getElementById("mes");
+    const meses = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
+    let anio = new Date().getFullYear();
+    for (let i = 0; i < 12; i++) {
+      const valor = `${anio}-${String(i+1).padStart(2,"0")}`;
+      const opt = document.createElement("option");
+      opt.value = valor;
+      opt.textContent = `${meses[i]} ${anio}`;
+      selectMes.appendChild(opt);
+    }
+
+    // Formateo CLP en inputs y actualización de límites
+    function formatearInput(input) {
+      input.addEventListener("input", () => {
+        const valor = input.value.replace(/\D/g, "");
+        if (valor) {
+          input.value = formatoCLP.format(valor);
+          input.dataset.valor = valor;
+        } else {
+          input.value = "";
+          input.dataset.valor = "";
+        }
+        actualizarLimites();
+      });
+    }
+
+    const sueldoInput = document.getElementById("sueldo");
+    formatearInput(sueldoInput);
+    document.querySelectorAll(".monto").forEach(i => formatearInput(i));
+
+    function actualizarLimites() {
+      const sueldo = parseInt(sueldoInput.dataset.valor || "0");
+      document.querySelectorAll("#tablaGastos tbody tr").forEach(fila => {
+        const categoria = fila.cells[0].innerText.trim();
+        const celdaLimite = fila.cells[2];
+        const inputMonto = fila.cells[1].querySelector("input");
+        const monto = parseInt(inputMonto?.dataset?.valor || "0");
+
+        // Calcular límite
+        if (reglas[categoria] && sueldo > 0) {
+          const limite = Math.round(sueldo * reglas[categoria]);
+          celdaLimite.textContent = formatoCLP.format(limite);
+
+          // Etiquetado visual según el estado
+          celdaLimite.classList.remove("ok","warn","over");
+          if (monto === 0) {
+            // sin dato, no marcamos estado
+          } else if (monto <= limite * 0.9) {
+            celdaLimite.classList.add("ok");       // dentro del límite cómodo
+          } else if (monto <= limite) {
+            celdaLimite.classList.add("warn");     // al tope del límite
+          } else {
+            celdaLimite.classList.add("over");     // sobrepasa el límite
+          }
+        } else {
+          celdaLimite.textContent = "-";
+          celdaLimite.classList.remove("ok","warn","over");
+        }
+      });
+    }
+
+    function guardarDatos() {
+      const sueldo = parseInt(sueldoInput.dataset.valor || "0");
+      const filas = document.querySelectorAll("#tablaGastos tbody tr");
+      const gastos = [];
+
+      filas.forEach(fila => {
+        const categoria = fila.cells[0].innerText.trim();
+        const input = fila.cells[1].querySelector("input");
+        const monto = parseInt(input.dataset.valor || "0");
+        if (monto > 0) gastos.push({ categoria, monto });
+      });
+
+      const mes = document.getElementById("mes").value;
+      if (!isNaN(sueldo) && sueldo > 0) {
+        localStorage.setItem(`finanzas-${mes}`, JSON.stringify({ sueldo, gastos }));
+        location.href = "grafico.html?mes=" + mes;
+      } else {
+        alert("Por favor ingresa un sueldo válido.");
+      }
+    }
+
+    // Animación de entrada para contenedor y footer
+    const elementos = document.querySelectorAll(".contenedor, footer");
+    const observer = new IntersectionObserver(entries => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) entry.target.classList.add("visible");
+      });
+    }, { threshold: 0.2 });
+    elementos.forEach(el => observer.observe(el));
+  </script>
+</body>
+</html>
